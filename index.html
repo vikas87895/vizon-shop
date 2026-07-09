@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vizon</title>
+<link rel="stylesheet" href="user.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="view-splash" class="view splash">
+  <h1 class="splash-brand">VIZON</h1>
+  <p>Loading...</p>
+</div>
+
+<div id="app" class="hidden">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">VIZON</div>
+    <div class="top-icons">
+      <span class="icon-btn" onclick="goHome('notifications')">🔔<span id="user-notif-badge" class="badge hidden">0</span></span>
+      <span class="icon-btn" onclick="goHome('profile')">👤</span>
+    </div>
+  </header>
+
+  <!-- GUEST BANNER -->
+  <div id="guest-banner" class="guest-banner hidden">
+    You are not logged in. <br/>
+    <div class="row gap" style="margin-top:8px">
+      <button class="btn primary small" onclick="showScreen('login')">Login</button>
+      <button class="btn small" onclick="showScreen('register')">Create Account</button>
+    </div>
+  </div>
+
+  <main class="content">
+
+    <!-- HOME -->
+    <section id="screen-home" class="screen">
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Search products..." oninput="renderProducts()" />
+      </div>
+      <h3>Categories</h3>
+      <div id="category-chips" class="chips-row"></div>
+      <h3 id="products-heading">All Products</h3>
+      <div id="products-grid" class="grid-cards"></div>
+    </section>
+
+    <!-- PRODUCT DETAILS -->
+    <section id="screen-product" class="screen hidden">
+      <button class="btn small" onclick="showScreen('home')">← Back</button>
+      <div id="product-detail"></div>
+    </section>
+
+    <!-- CART -->
+    <section id="screen-cart" class="screen hidden">
+      <h2>My Cart</h2>
+      <div id="cart-body"></div>
+    </section>
+
+    <!-- LOGIN -->
+    <section id="screen-login" class="screen hidden">
+      <div class="card auth-card">
+        <h2>Login</h2>
+        <label>12 Digit Unique ID</label>
+        <input type="text" id="login-uid" maxlength="12" placeholder="e.g. 982145632178" />
+        <label>Password</label>
+        <input type="password" id="login-pw" placeholder="Your password" />
+        <button class="btn primary" onclick="userLogin()">Login</button>
+        <p id="login-error" class="error"></p>
+        <p class="hint">New here? <a href="#" onclick="showScreen('register')">Create an account</a></p>
+      </div>
+    </section>
+
+    <!-- REGISTER -->
+    <section id="screen-register" class="screen hidden">
+      <div class="card auth-card">
+        <h2>Create Account</h2>
+
+        <div id="reg-step-1">
+          <label>Full Name</label>
+          <input type="text" id="reg-name" placeholder="Your name" />
+          <label>Mobile Number</label>
+          <input type="text" id="reg-mobile" maxlength="10" placeholder="10 digit mobile number" />
+          <button class="btn primary" onclick="sendOtp()">Get OTP</button>
+          <p id="reg-step1-error" class="error"></p>
+        </div>
+
+        <div id="reg-step-2" class="hidden">
+          <label>Enter OTP</label>
+          <input type="text" id="reg-otp" maxlength="6" placeholder="6 digit OTP" />
+          <p class="hint" id="demo-otp-hint"></p>
+          <button class="btn primary" onclick="verifyOtp()">Verify OTP</button>
+          <p id="reg-step2-error" class="error"></p>
+          <p id="reg-step2-success" class="success"></p>
+        </div>
+
+        <div id="reg-step-3" class="hidden">
+          <label>Date of Birth</label>
+          <input type="date" id="reg-dob" />
+          <button class="btn primary" onclick="goStep4()">Next</button>
+        </div>
+
+        <div id="reg-step-4" class="hidden">
+          <p>We need your live location to deliver your order accurately.</p>
+          <button class="btn primary" onclick="requestLocation()">Allow Live Location</button>
+          <p id="reg-location-status" class="hint"></p>
+        </div>
+
+        <div id="reg-step-5" class="hidden">
+          <label>Create Password</label>
+          <div class="pw-row">
+            <input type="password" id="reg-password" placeholder="Create a password" />
+            <button type="button" class="btn small" onclick="toggleShowPw()">Show</button>
+          </div>
+          <label>Delivery Address</label>
+          <textarea id="reg-address" placeholder="House no, street, area, city"></textarea>
+          <button class="btn primary" onclick="submitRegistration()">Create Account</button>
+          <p id="reg-step5-error" class="error"></p>
+        </div>
+
+        <div id="reg-step-done" class="hidden card" style="background:#f0fdf4">
+          <h3>🎉 Account Created!</h3>
+          <p>Your Unique ID (use this to login):</p>
+          <div class="uid-box">
+            <span id="new-uid"></span>
+            <button class="btn small" onclick="copyUid()">Copy</button>
+          </div>
+          <button class="btn primary" onclick="showScreen('home')" style="margin-top:14px">Continue to App</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ORDER SUMMARY -->
+    <section id="screen-order" class="screen hidden">
+      <button class="btn small" onclick="showScreen('cart')">← Back</button>
+      <h2>Order Summary</h2>
+      <div id="order-summary-body" class="card"></div>
+      <div class="card">
+        <label>Delivery Address</label>
+        <textarea id="order-address"></textarea>
+        <button class="btn small" onclick="requestOrderLocation()">📍 Use Live Location</button>
+        <p id="order-location-status" class="hint"></p>
+        <label style="margin-top:12px">Payment Method</label>
+        <div class="pay-methods" id="pay-methods-list">
+          <label class="radio-opt"><input type="radio" name="pay-method" value="cod" checked /> Cash on Delivery</label>
+          <label class="radio-opt"><input type="radio" name="pay-method" value="online" /> Online Payment (QR)</label>
+          <label class="radio-opt"><input type="radio" name="pay-method" value="avpoints" /> Pay with AV Points <span id="pay-avpoints-balance" class="hint"></span></label>
+        </div>
+        <button class="btn primary" style="margin-top:14px" onclick="confirmOrder()">Confirm Order</button>
+        <p id="order-error" class="error"></p>
+      </div>
+    </section>
+
+
+    <!-- PAYMENT (Online) -->
+    <section id="screen-payment" class="screen hidden">
+      <h2>Online Payment</h2>
+      <div class="card" style="text-align:center">
+        <p>Scan this QR code with any UPI app / FamPay to pay <b id="payment-amount"></b></p>
+        <img id="payment-qr" src="" style="max-width:220px;border-radius:10px" />
+        <p id="payment-qr-missing" class="hint hidden">Owner hasn't uploaded a QR code yet. Please contact the shop.</p>
+        <button class="btn primary" style="margin-top:14px" onclick="markPaid()">I Have Paid</button>
+        <p id="payment-status" class="hint"></p>
+      </div>
+    </section>
+
+    <!-- ORDERS LIST / TRACKING -->
+    <section id="screen-orders" class="screen hidden">
+      <h2>My Orders</h2>
+      <div id="orders-list-user"></div>
+    </section>
+
+    <section id="screen-tracking" class="screen hidden">
+      <button class="btn small" onclick="showScreen('orders')">← Back</button>
+      <h2>Order Tracking</h2>
+      <div id="tracking-body" class="card"></div>
+      <div id="tracking-map" style="height:280px;border-radius:12px;margin-top:10px"></div>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="screen-profile" class="screen hidden">
+      <h2>Profile</h2>
+      <div id="profile-body" class="card"></div>
+    </section>
+
+    <!-- NOTIFICATIONS -->
+    <section id="screen-notifications" class="screen hidden">
+      <div class="row-between">
+        <h2>Notifications</h2>
+        <button class="btn small" onclick="markAllUserNotifRead()">Mark all read</button>
+      </div>
+      <div id="user-notif-list"></div>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <button onclick="showScreen('home')">🏠<br/>Home</button>
+    <button onclick="showScreen('cart')">🛒<span id="cart-badge" class="badge hidden">0</span><br/>Cart</button>
+    <button onclick="showScreen('orders')">📦<br/>Orders</button>
+    <button onclick="goHome('avpoints')">⭐<br/>AV Points</button>
+    <button onclick="goHome('profile')">👤<br/>Profile</button>
+  </nav>
+
+  <section id="screen-avpoints" class="screen hidden full-overlay">
+    <button class="btn small" onclick="showScreen('home')">← Back</button>
+    <h2>AV Points</h2>
+    <div class="card" style="text-align:center">
+      <p class="hint">Current Balance</p>
+      <h1 id="av-balance-display">0</h1>
+      <p class="hint">Rule: Every ₹10 = 10 Points + ₹1 Bonus. Points can be used to pay for orders (1 Point = ₹1).</p>
+    </div>
+
+    <div class="card">
+      <h3>Recharge AV Points</h3>
+      <p class="hint">Step 1: Scan this QR code and pay any amount via UPI / FamPay.</p>
+      <div style="text-align:center">
+        <img id="av-qr-image" src="" class="hidden" style="max-width:200px;border-radius:10px;margin:10px 0" />
+        <p id="av-qr-missing" class="hint hidden">Owner hasn't uploaded a QR code yet. Please contact the shop directly.</p>
+      </div>
+      <p class="hint" style="margin-top:10px">Step 2: After paying, enter the amount and upload a screenshot of the payment.</p>
+      <label>Amount Paid (₹)</label>
+      <input type="number" id="av-recharge-amount" placeholder="e.g. 50" />
+      <label>Payment Screenshot</label>
+      <input type="file" id="av-recharge-screenshot" accept="image/*" />
+      <button class="btn primary" onclick="submitRechargeRequest()">Submit for Verification</button>
+      <p id="av-recharge-error" class="error"></p>
+      <p id="av-recharge-success" class="success"></p>
+    </div>
+
+    <div class="card">
+      <h3>Transaction History</h3>
+      <div id="av-transaction-history"></div>
+    </div>
+  </section>
+
+
+</div>
+
+<script src="config.js"></script>
+<script src="api.js"></script>
+<script src="user.js"></script>
+</body>
+</html>

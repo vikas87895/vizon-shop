@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vizon Owner Panel</title>
+<link rel="stylesheet" href="owner.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+
+<!-- LOGIN VIEW -->
+<div id="view-login" class="view center-screen">
+  <div class="card login-card">
+    <h1 class="brand">VIZON</h1>
+    <p class="muted">Owner Panel Login</p>
+    <input id="login-username" type="text" placeholder="Username" value="owner" />
+    <input id="login-password" type="password" placeholder="Password" value="owner123" />
+    <button class="btn primary" onclick="ownerLogin()">Login</button>
+    <p id="login-error" class="error"></p>
+    <p class="hint">Default: owner / owner123 (change it after first login in Settings)</p>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand">VIZON <span class="tag">Owner</span></div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
+      <button class="tab-btn" data-tab="products" onclick="switchTab('products')">Products</button>
+      <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">Orders</button>
+      <button class="tab-btn" data-tab="avpoints" onclick="switchTab('avpoints')">AV Points</button>
+      <button class="tab-btn" data-tab="notifications" onclick="switchTab('notifications')">
+        Notifications <span id="notif-badge" class="badge hidden">0</span>
+      </button>
+      <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">Settings</button>
+    </nav>
+    <button class="btn small" onclick="ownerLogout()">Logout</button>
+  </header>
+
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard" class="tab-view">
+      <h2>Dashboard</h2>
+      <div class="grid-cards" id="dashboard-cards"></div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section id="tab-products" class="tab-view hidden">
+      <div class="row-between">
+        <h2>Products</h2>
+        <button class="btn primary" onclick="openProductForm()">+ Add Product</button>
+      </div>
+      <div id="product-form" class="card hidden">
+        <h3 id="product-form-title">Add Product</h3>
+        <input type="hidden" id="product-id" />
+        <label>Product Photo *</label>
+        <input type="file" id="product-image" accept="image/*" />
+        <label>Product Name *</label>
+        <input type="text" id="product-name" placeholder="e.g. Cheese Burger" />
+        <label>Short Description</label>
+        <textarea id="product-desc" placeholder="e.g. Loaded with cheese & veggies"></textarea>
+        <label>Category *</label>
+        <select id="product-category"></select>
+        <label>Price (₹) *</label>
+        <input type="number" id="product-price" placeholder="e.g. 120" />
+        <div class="row gap">
+          <button class="btn primary" onclick="saveProduct()">Save Product</button>
+          <button class="btn" onclick="closeProductForm()">Cancel</button>
+        </div>
+        <p id="product-form-error" class="error"></p>
+      </div>
+      <div id="products-list" class="grid-cards"></div>
+    </section>
+
+    <!-- ORDERS -->
+    <section id="tab-orders" class="tab-view hidden">
+      <h2>Orders</h2>
+      <div class="filter-row">
+        <button class="chip active" data-status="all" onclick="filterOrders('all')">All</button>
+        <button class="chip" data-status="new" onclick="filterOrders('new')">New</button>
+        <button class="chip" data-status="awaiting_payment" onclick="filterOrders('awaiting_payment')">Awaiting Payment</button>
+        <button class="chip" data-status="payment_pending_verification" onclick="filterOrders('payment_pending_verification')">Verify Payment</button>
+        <button class="chip" data-status="paid" onclick="filterOrders('paid')">Paid</button>
+        <button class="chip" data-status="confirmed" onclick="filterOrders('confirmed')">Confirmed</button>
+        <button class="chip" data-status="dispatched" onclick="filterOrders('dispatched')">Dispatched</button>
+        <button class="chip" data-status="delivered" onclick="filterOrders('delivered')">Delivered</button>
+        <button class="chip" data-status="cancelled" onclick="filterOrders('cancelled')">Cancelled</button>
+      </div>
+      <div id="orders-list"></div>
+    </section>
+
+    <!-- ORDER DETAILS MODAL -->
+    <div id="order-modal" class="modal hidden">
+      <div class="modal-card">
+        <button class="close-btn" onclick="closeOrderModal()">✕</button>
+        <div id="order-modal-body"></div>
+      </div>
+    </div>
+
+    <!-- AV POINTS -->
+    <section id="tab-avpoints" class="tab-view hidden">
+      <h2>AV Points</h2>
+
+      <h3>Pending Recharge Requests</h3>
+      <p class="hint">Customers scan your QR code, pay, then upload a screenshot here for you to verify.</p>
+      <div id="recharge-requests-list"></div>
+
+      <h3 style="margin-top:24px">Manually Add Points</h3>
+      <div class="card" style="max-width:420px">
+        <label>User Unique ID</label>
+        <input type="text" id="av-uniqueid" placeholder="12 digit unique ID" maxlength="12" />
+        <label>Recharge Amount (₹)</label>
+        <input type="number" id="av-amount" placeholder="e.g. 20" />
+        <p class="hint">Rule: Every ₹10 = 10 Points + ₹1 Bonus</p>
+        <button class="btn primary" onclick="submitAvPoints()">Submit</button>
+        <p id="av-result" class="success"></p>
+        <p id="av-error" class="error"></p>
+      </div>
+    </section>
+
+    <!-- SCREENSHOT PREVIEW MODAL -->
+    <div id="screenshot-modal" class="modal hidden" onclick="closeScreenshotModal()">
+      <img id="screenshot-modal-img" src="" style="max-width:92vw;max-height:92vh;border-radius:10px" />
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <section id="tab-notifications" class="tab-view hidden">
+      <div class="row-between">
+        <h2>Notifications</h2>
+        <button class="btn small" onclick="markAllNotifRead()">Mark all read</button>
+      </div>
+      <div id="owner-notif-list"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="tab-view hidden">
+      <h2>Settings</h2>
+      <div class="card" style="max-width:420px">
+        <h3>Change Owner Password</h3>
+        <input type="password" id="new-owner-password" placeholder="New password" />
+        <button class="btn primary" onclick="changeOwnerPassword()">Update Password</button>
+        <p id="settings-msg" class="success"></p>
+      </div>
+      <div class="card" style="max-width:420px">
+        <h3>FamPay QR Code (for Online Payments)</h3>
+        <input type="file" id="qr-image" accept="image/*" />
+        <button class="btn primary" onclick="uploadQr()">Upload QR</button>
+        <div id="qr-preview"></div>
+      </div>
+      <div class="card" style="max-width:420px">
+        <h3>Live Location Sharing</h3>
+        <p class="hint">Turn this ON when you go out for delivery so customers can track you live.</p>
+        <button class="btn primary" id="location-share-btn" onclick="toggleLocationSharing()">Start Sharing Location</button>
+        <p id="location-status" class="hint"></p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="owner.js"></script>
+</body>
+</html>
