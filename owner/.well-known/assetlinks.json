@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "io.github.vikas87895.vizonowner",
-        "sha256_cert_fingerprints": ["95:92:37:C3:CE:80:5C:D8:5D:62:78:66:58:02:61:B7:DE:F6:6C:E1:7A:01:1E:3D:2F:F9:80:60:43:E7:1D:54"]
-      }
-    }]
