@@ -33,6 +33,7 @@ function ownerLogout() {
 function boot() {
   document.getElementById("view-login").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
+  setupPushForRole("owner");
   loadCategories();
   switchTab("dashboard");
   pollNotifications();
@@ -390,10 +391,26 @@ function closeScreenshotModal() {
 }
 
 // ---------------- NOTIFICATIONS ----------------
+// Notification sound — plays whenever the unread count goes UP (a new notification arrived)
+const NOTIF_SOUND_URL = "https://drive.google.com/uc?export=download&id=1nbITYy1lqvtNzJG-M_BJ1O-d2-Q5gcBk";
+const notifSound = new Audio(NOTIF_SOUND_URL);
+let lastUnreadCount = 0;
+let unreadCountInitialized = false;
+
+function playNotifSound() {
+  notifSound.currentTime = 0;
+  notifSound.play().catch(() => {}); // ignore if browser blocks autoplay before any user interaction
+}
+
 function pollNotifications() {
   if (!TOKEN) return;
   apiGet("ownerNotifications", { token: TOKEN }).then((res) => {
     const unread = res.notifications.filter((n) => !n.read).length;
+    if (unreadCountInitialized && unread > lastUnreadCount) {
+      playNotifSound();
+    }
+    lastUnreadCount = unread;
+    unreadCountInitialized = true;
     const badge = document.getElementById("notif-badge");
     if (unread > 0) {
       badge.innerText = unread;
