@@ -48,6 +48,9 @@ function boot() {
 
 function onLoggedIn() {
   document.getElementById("guest-banner").classList.add("hidden");
+  if (CURRENT_USER && CURRENT_USER.id) {
+    setupPushForRole("user", CURRENT_USER.id);
+  }
 }
 function onLoggedOut() {
   document.getElementById("guest-banner").classList.remove("hidden");
@@ -764,10 +767,26 @@ function loadProfile() {
 }
 
 // ---------------- NOTIFICATIONS ----------------
+// Notification sound — plays whenever the unread count goes UP (a new notification arrived)
+const NOTIF_SOUND_URL = "https://drive.google.com/uc?export=download&id=1nbITYy1lqvtNzJG-M_BJ1O-d2-Q5gcBk";
+const notifSound = new Audio(NOTIF_SOUND_URL);
+let lastUnreadCount = 0;
+let unreadCountInitialized = false;
+
+function playNotifSound() {
+  notifSound.currentTime = 0;
+  notifSound.play().catch(() => {}); // ignore if browser blocks autoplay before any user interaction
+}
+
 function pollUserNotifications() {
   if (!TOKEN) return;
   apiGet("myNotifications", { token: TOKEN }).then((res) => {
     const unread = res.notifications.filter((n) => !n.read).length;
+    if (unreadCountInitialized && unread > lastUnreadCount) {
+      playNotifSound();
+    }
+    lastUnreadCount = unread;
+    unreadCountInitialized = true;
     const badge = document.getElementById("user-notif-badge");
     if (unread > 0) {
       badge.innerText = unread;
